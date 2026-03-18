@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import "tailwindcss";
+
+*{
+  font-family: "Outfit", sans-serif;
+}
+
+@theme{
+  --color-primary: #2C459D;
+  --color-primary-light: #3D56B2;
+  --color-primary-dark: #1F3278;
+  --color-primary-50: rgba(44, 69, 157, 0.05);
+  --color-primary-100: rgba(44, 69, 157, 0.1);
+  --color-primary-200: rgba(44, 69, 157, 0.2);
+  --color-primary-300: rgba(44, 69, 157, 0.3);
+}
+
+.reset-tw, .reset-tw *{
+  all: revert !important;
+}
+
+.cl-drawerRoot{
+  z-index: 10;
+}
+
+/* Additional utility classes for the new color */
+.bg-primary-gradient {
+  background: linear-gradient(135deg, #2C459D 0%, #3D56B2 100%);
+}
+
+.text-primary-gradient {
+  background: linear-gradient(135deg, #2C459D 0%, #3D56B2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shadow-primary {
+  box-shadow: 0 10px 40px rgba(44, 69, 157, 0.15);
+}
+
+.border-primary-light {
+  border-color: rgba(44, 69, 157, 0.2);
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(44, 69, 157, 0.2);
+}

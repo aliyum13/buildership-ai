@@ -1,0 +1,37 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo Icon - Ship/Rocket hybrid with building blocks -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2C459D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A63B3;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon Container -->
+  <g transform="translate(5, 10)">
+    <!-- Base blocks representing building/foundation -->
+    <rect x="2" y="32" width="8" height="8" fill="#2C459D" rx="1"/>
+    <rect x="12" y="32" width="8" height="8" fill="#3D56B2" rx="1"/>
+    <rect x="22" y="32" width="8" height="8" fill="#4A63B3" rx="1"/>
+    
+    <rect x="7" y="24" width="8" height="8" fill="#3D56B2" rx="1"/>
+    <rect x="17" y="24" width="8" height="8" fill="#4A63B3" rx="1"/>
+    
+    <rect x="12" y="16" width="8" height="8" fill="#4A63B3" rx="1"/>
+    
+    <!-- Rocket/Ship top representing launch -->
+    <path d="M 16 2 L 20 14 L 12 14 Z" fill="url(#logoGradient)"/>
+    <circle cx="16" cy="10" r="2" fill="white" opacity="0.9"/>
+    
+    <!-- AI Sparkle -->
+    <circle cx="28" cy="8" r="1.5" fill="#FFD700"/>
+    <path d="M 28 5 L 28 11 M 25 8 L 31 8" stroke="#FFD700" stroke-width="1" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="48" y="28" font-family="'Outfit', sans-serif" font-size="20" font-weight="700" fill="#1F3278">BuilderShip</text>
+  <text x="48" y="42" font-family="'Outfit', sans-serif" font-size="12" font-weight="500" fill="#4A63B3" letter-spacing="2">AI</text>
+  
+  <!-- Tagline -->
+  <text x="48" y="52" font-family="'Outfit', sans-serif" font-size="8" font-weight="400" fill="#6B7280" letter-spacing="0.5">Build. Scale. Succeed.</text>
+</svg>
