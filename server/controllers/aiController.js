@@ -22,7 +22,7 @@ const callWithRetry = async (apiFunction, retryCount = 3, baseDelay = 2000) => {
             if (error.status === 429 || error.code === 'rate_limit_exceeded') {
                 if (!isLastAttempt) {
                     const delay = baseDelay * Math.pow(2, attempt);
-                    console.log(`⚠️  Rate limited. Retrying in ${delay}ms... (Attempt ${attempt + 1}/${retryCount})`);
+                    console.log(`⚠️  Rate limited. Retrying in ${delay}ms...`);
                     await sleep(delay);
                     continue;
                 }
@@ -33,14 +33,14 @@ const callWithRetry = async (apiFunction, retryCount = 3, baseDelay = 2000) => {
             }
             if (isLastAttempt) throw error;
             const delay = baseDelay * Math.pow(2, attempt);
-            console.log(`⚠️  API error. Retrying in ${delay}ms... (Attempt ${attempt + 1}/${retryCount})`);
             await sleep(delay);
         }
     }
     throw new Error('Max retry attempts exceeded');
 };
 
-const generateAIContent = async (prompt, maxTokens = 1000) => {
+// ✅ FIXED: All token limits increased significantly to prevent truncation
+const generateAIContent = async (prompt, maxTokens = 2000) => {
     return await callWithRetry(async () => {
         const response = await AI.chat.completions.create({
             model: "gemini-2.5-flash",
@@ -54,7 +54,7 @@ const generateAIContent = async (prompt, maxTokens = 1000) => {
 
 const checkUserLimits = (plan, free_usage, res) => {
     if (plan !== 'premium' && free_usage >= 10) {
-        res.json({ success: false, message: "Limit reached. Upgrade to continue." });
+        res.json({ success: false, message: "You have reached your free limit of 10 uses. Upgrade to Premium to continue." });
         return false;
     }
     return true;
@@ -62,7 +62,10 @@ const checkUserLimits = (plan, free_usage, res) => {
 
 const checkPremiumAccess = (plan, res) => {
     if (plan !== 'premium') {
-        res.json({ success: false, message: "This feature is only available for premium subscriptions" });
+        res.json({
+            success: false,
+            message: "This feature requires a Premium subscription. Upgrade your plan to access Pitch Deck Generator, Market Research, Competitor Analysis, Financial Projections, Image Generation, Background Removal, Object Removal, and Resume Review."
+        });
         return false;
     }
     return true;
@@ -73,6 +76,8 @@ const updateUserUsage = async (userId, free_usage) => {
         privateMetadata: { free_usage: free_usage + 1 }
     });
 };
+
+// ========== CONTENT GENERATION ==========
 
 export const generateArticle = async (req, res) => {
     try {
@@ -85,7 +90,11 @@ export const generateArticle = async (req, res) => {
         if (!prompt) return res.json({ success: false, message: "Prompt is required" });
 
         console.log(`📝 Generating article for user ${userId}...`);
-        const content = await generateAIContent(prompt, length || 1000);
+
+        // ✅ FIXED: Convert word count to proper token count (1 word ≈ 1.5 tokens)
+        // Minimum 1500 tokens to prevent truncation, maximum 4000
+        const tokenLimit = Math.max(1500, Math.min(Math.round((length || 800) * 2), 4000));
+        const content = await generateAIContent(prompt, tokenLimit);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, ${prompt}, ${content}, 'article')`;
 
@@ -111,8 +120,8 @@ export const generateBlogTitle = async (req, res) => {
 
         console.log(`📰 Generating blog titles for user ${userId}...`);
 
-        // ✅ FIXED: was 100, now 800 so full titles are returned
-        const content = await generateAIContent(prompt, 800);
+        // ✅ FIXED: Was 100 tokens (way too low). Now 1500 tokens for full title list
+        const content = await generateAIContent(prompt, 1500);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, ${prompt}, ${content}, 'blog-title')`;
 
@@ -232,7 +241,7 @@ export const resumeReview = async (req, res) => {
         if (!resume) return res.json({ success: false, message: "Resume file is required" });
 
         if (resume.size > 5 * 1024 * 1024) {
-            return res.json({ success: false, message: "Resume file size exceeds allowed size (5MB)." });
+            return res.json({ success: false, message: "Resume file size exceeds 5MB limit." });
         }
 
         console.log(`📄 Reviewing resume for user ${userId}...`);
@@ -245,7 +254,7 @@ export const resumeReview = async (req, res) => {
             if (fs.existsSync(resume.path)) fs.unlinkSync(resume.path);
             return res.json({
                 success: false,
-                message: "Could not extract text from the PDF. Please make sure your PDF contains real readable text (not a scanned image)."
+                message: "Could not extract text from this PDF. Please ensure your PDF contains real readable text (not a scanned image)."
             });
         }
 
@@ -264,7 +273,8 @@ ${resumeText}
 
 Be specific, constructive, and actionable in your feedback.`;
 
-        const content = await generateAIContent(prompt, 1500);
+        // ✅ FIXED: 2500 tokens for complete resume review
+        const content = await generateAIContent(prompt, 2500);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, 'Review the uploaded resume', ${content}, 'resume-review')`;
 
@@ -278,6 +288,8 @@ Be specific, constructive, and actionable in your feedback.`;
     }
 };
 
+// ========== BUSINESS PLANNING ==========
+
 export const validateBusinessIdea = async (req, res) => {
     try {
         const { userId } = req.auth();
@@ -288,7 +300,7 @@ export const validateBusinessIdea = async (req, res) => {
         if (!checkUserLimits(plan, free_usage, res)) return;
 
         if (!idea || !industry || !target_market || !problem) {
-            return res.json({ success: false, message: "All fields (idea, industry, target_market, problem) are required" });
+            return res.json({ success: false, message: "All fields are required" });
         }
 
         console.log(`💡 Validating business idea for user ${userId}...`);
@@ -311,10 +323,11 @@ export const validateBusinessIdea = async (req, res) => {
             6. **Revenue Potential** - Realistic assessment of monetization
             7. **Next Steps** - 3-5 actionable recommendations to validate further
             
-            Be honest, constructive, and provide specific, actionable insights.
+            Be honest, constructive, and provide specific, actionable insights. Complete all 7 sections fully.
         `;
 
-        const content = await generateAIContent(prompt, 2000);
+        // ✅ FIXED: 3000 tokens to ensure all 7 sections complete
+        const content = await generateAIContent(prompt, 3000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${idea}, ${content}, 'business-validation', 'business-planning')`;
 
@@ -352,7 +365,7 @@ export const generatePitchDeck = async (req, res) => {
             Business Model: ${business_model || 'Not specified'}
             Competitive Advantage: ${competitive_advantage || 'Not specified'}
             
-            Generate detailed content for these 10 slides:
+            Generate detailed content for ALL 10 slides. Do not stop until all 10 are complete:
             1. Problem Statement
             2. Solution Overview
             3. Market Opportunity
@@ -367,7 +380,8 @@ export const generatePitchDeck = async (req, res) => {
             For each slide, provide a compelling headline and 3-5 bullet points with specific details.
         `;
 
-        const content = await generateAIContent(prompt, 3000);
+        // ✅ FIXED: 4000 tokens for full 10-slide pitch deck
+        const content = await generateAIContent(prompt, 4000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${business_name}, ${content}, 'pitch-deck', 'business-planning')`;
 
@@ -400,7 +414,7 @@ export const generateMarketResearch = async (req, res) => {
             Target Market: ${target_market}
             Research Focus: ${research_focus || 'General market analysis'}
             
-            Provide detailed insights on:
+            Provide detailed insights on ALL sections below. Complete every section fully:
             1. Market Overview - Size, growth trends, and key drivers
             2. Customer Segments - Demographics, behaviors, and pain points
             3. Market Trends - Current and emerging trends
@@ -410,7 +424,8 @@ export const generateMarketResearch = async (req, res) => {
             Include specific data points and actionable insights.
         `;
 
-        const content = await generateAIContent(prompt, 2500);
+        // ✅ FIXED: 3500 tokens for complete research
+        const content = await generateAIContent(prompt, 3500);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${`${industry} - ${target_market}`}, ${content}, 'market-research', 'business-planning')`;
 
@@ -443,7 +458,7 @@ export const generateCompetitorAnalysis = async (req, res) => {
             Industry: ${industry}
             Known Competitors: ${competitors || 'Research and identify main competitors'}
             
-            Provide:
+            Provide ALL sections below completely:
             1. Competitive Landscape - Overview of the competitive environment
             2. Direct Competitors - Analysis of 3-5 main competitors
             3. Strengths & Weaknesses - SWOT analysis for each competitor
@@ -453,7 +468,8 @@ export const generateCompetitorAnalysis = async (req, res) => {
             Be specific and actionable with your recommendations.
         `;
 
-        const content = await generateAIContent(prompt, 2500);
+        // ✅ FIXED: 3500 tokens for full analysis
+        const content = await generateAIContent(prompt, 3500);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${your_business}, ${content}, 'competitor-analysis', 'business-planning')`;
 
@@ -488,7 +504,7 @@ export const generateFinancialProjections = async (req, res) => {
             Target Customers (Year 1): ${target_customers || 'Not specified'}
             Estimated Costs: ${costs || 'Not specified'}
             
-            Provide:
+            Provide ALL sections below completely:
             1. Revenue Projections - Monthly breakdown for Year 1, quarterly for Years 2-3
             2. Cost Structure - Fixed and variable costs
             3. Unit Economics - Customer acquisition cost, lifetime value, margins
@@ -497,10 +513,11 @@ export const generateFinancialProjections = async (req, res) => {
             6. Key Assumptions - List all assumptions made
             7. Recommendations - Financial strategy recommendations
             
-            Be realistic and conservative with projections. Show calculation logic.
+            Be realistic and conservative. Show calculation logic. Complete all 7 sections.
         `;
 
-        const content = await generateAIContent(prompt, 2500);
+        // ✅ FIXED: 4000 tokens for full financial projections
+        const content = await generateAIContent(prompt, 4000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${business_model}, ${content}, 'financial-projections', 'business-planning')`;
 

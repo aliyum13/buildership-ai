@@ -22,15 +22,26 @@ const BlogTitles = () => {
     e.preventDefault();
     try {
       setLoading(true)
-      const prompt = `Generate 5-7 compelling, attention-grabbing titles for a ${selectedType} about: "${input}".
-      
-      Make them:
-      - Engaging and clickable
-      - Suitable for entrepreneurs and business audiences
-      - Action-oriented when appropriate
-      - SEO-friendly
-      
-      Format: Provide a numbered list with brief explanations of why each title works.`
+
+      // ✅ FIXED: Strict prompt that forces ONLY numbered titles, no commentary paragraphs
+      const prompt = `You are a professional copywriter. Generate exactly 7 title suggestions for a ${selectedType} about: "${input}".
+
+STRICT FORMAT RULES — follow exactly:
+- Output ONLY a numbered list from 1 to 7
+- Each item: number, title, then ONE sentence explaining why it works
+- Do NOT write any introduction paragraph
+- Do NOT write any conclusion paragraph
+- Do NOT write anything before number 1 or after number 7
+- Start your response immediately with "1."
+
+Example format:
+1. [Title Here]
+Why it works: [One sentence explanation]
+
+2. [Title Here]
+Why it works: [One sentence explanation]
+
+Now generate 7 titles for a ${selectedType} about: "${input}"`
 
       const { data } = await axios.post('/api/ai/generate-blog-title', {prompt}, {
         headers: {Authorization: `Bearer ${await getToken()}`}
@@ -100,7 +111,7 @@ const BlogTitles = () => {
             <div className='flex-1 flex justify-center items-center'>
               <div className='text-sm flex flex-col items-center gap-5 text-gray-400'>
                 <Hash className='w-9 h-9' />
-                <p className='text-center'>Enter your topic and select content type to generate compelling titles</p>
+                <p className='text-center'>Enter your topic and select content type to generate 7 compelling titles</p>
               </div>
             </div>
           ) : (
