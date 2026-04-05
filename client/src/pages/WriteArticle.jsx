@@ -99,7 +99,7 @@ const WriteArticle = () => {
               </div>
             </div>
           ) : (
-            <div className='mt-3 text-sm text-slate-600 overflow-y-auto' style={{maxHeight: '70vh'}}>
+            <div className='mt-3 text-sm text-slate-600'>
               <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#475569' }}>
                 <Markdown>{content}</Markdown>
               </div>

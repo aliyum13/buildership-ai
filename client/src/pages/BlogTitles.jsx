@@ -23,7 +23,6 @@ const BlogTitles = () => {
     try {
       setLoading(true)
 
-      // ✅ FIXED: Strict prompt that forces ONLY numbered titles, no commentary paragraphs
       const prompt = `You are a professional copywriter. Generate exactly 7 title suggestions for a ${selectedType} about: "${input}".
 
 STRICT FORMAT RULES — follow exactly:
@@ -115,7 +114,7 @@ Now generate 7 titles for a ${selectedType} about: "${input}"`
               </div>
             </div>
           ) : (
-            <div className='mt-3 text-sm text-slate-600 overflow-y-auto' style={{maxHeight: '70vh'}}>
+            <div className='mt-3 text-sm text-slate-600'>
               <div style={{ fontSize: '14px', lineHeight: '1.7', color: '#475569' }}>
                 <Markdown>{content}</Markdown>
               </div>
