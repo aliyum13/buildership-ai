@@ -39,8 +39,8 @@ const callWithRetry = async (apiFunction, retryCount = 3, baseDelay = 2000) => {
     throw new Error('Max retry attempts exceeded');
 };
 
-// ✅ FIXED: All token limits increased significantly to prevent truncation
-const generateAIContent = async (prompt, maxTokens = 2000) => {
+// ✅ Default raised to 6000 — Gemini 2.5 Flash supports up to 8192 output tokens
+const generateAIContent = async (prompt, maxTokens = 6000) => {
     return await callWithRetry(async () => {
         const response = await AI.chat.completions.create({
             model: "gemini-2.5-flash",
@@ -91,9 +91,8 @@ export const generateArticle = async (req, res) => {
 
         console.log(`📝 Generating article for user ${userId}...`);
 
-        // ✅ FIXED: Convert word count to proper token count (1 word ≈ 1.5 tokens)
-        // Minimum 1500 tokens to prevent truncation, maximum 4000
-        const tokenLimit = Math.max(1500, Math.min(Math.round((length || 800) * 2), 4000));
+        // ✅ Min 2000, max 8000 — covers all content types including long blog posts
+        const tokenLimit = Math.max(2000, Math.min(Math.round((length || 800) * 2.5), 8000));
         const content = await generateAIContent(prompt, tokenLimit);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, ${prompt}, ${content}, 'article')`;
@@ -120,8 +119,8 @@ export const generateBlogTitle = async (req, res) => {
 
         console.log(`📰 Generating blog titles for user ${userId}...`);
 
-        // ✅ FIXED: Was 100 tokens (way too low). Now 1500 tokens for full title list
-        const content = await generateAIContent(prompt, 1500);
+        // ✅ 2000 tokens — plenty for 7 titles with explanations
+        const content = await generateAIContent(prompt, 2000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, ${prompt}, ${content}, 'blog-title')`;
 
@@ -273,8 +272,8 @@ ${resumeText}
 
 Be specific, constructive, and actionable in your feedback.`;
 
-        // ✅ FIXED: 2500 tokens for complete resume review
-        const content = await generateAIContent(prompt, 2500);
+        // ✅ 6000 tokens — ensures all 6 sections complete fully
+        const content = await generateAIContent(prompt, 6000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type) VALUES (${userId}, 'Review the uploaded resume', ${content}, 'resume-review')`;
 
@@ -326,8 +325,8 @@ export const validateBusinessIdea = async (req, res) => {
             Be honest, constructive, and provide specific, actionable insights. Complete all 7 sections fully.
         `;
 
-        // ✅ FIXED: 3000 tokens to ensure all 7 sections complete
-        const content = await generateAIContent(prompt, 3000);
+        // ✅ 6000 tokens — ensures all 7 sections complete fully
+        const content = await generateAIContent(prompt, 6000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${idea}, ${content}, 'business-validation', 'business-planning')`;
 
@@ -380,8 +379,8 @@ export const generatePitchDeck = async (req, res) => {
             For each slide, provide a compelling headline and 3-5 bullet points with specific details.
         `;
 
-        // ✅ FIXED: 4000 tokens for full 10-slide pitch deck
-        const content = await generateAIContent(prompt, 4000);
+        // ✅ 8000 tokens — maximum safe limit for full 10-slide pitch deck
+        const content = await generateAIContent(prompt, 8000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${business_name}, ${content}, 'pitch-deck', 'business-planning')`;
 
@@ -424,8 +423,8 @@ export const generateMarketResearch = async (req, res) => {
             Include specific data points and actionable insights.
         `;
 
-        // ✅ FIXED: 3500 tokens for complete research
-        const content = await generateAIContent(prompt, 3500);
+        // ✅ 6000 tokens — ensures all 5 sections complete fully
+        const content = await generateAIContent(prompt, 6000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${`${industry} - ${target_market}`}, ${content}, 'market-research', 'business-planning')`;
 
@@ -468,8 +467,8 @@ export const generateCompetitorAnalysis = async (req, res) => {
             Be specific and actionable with your recommendations.
         `;
 
-        // ✅ FIXED: 3500 tokens for full analysis
-        const content = await generateAIContent(prompt, 3500);
+        // ✅ 6000 tokens — ensures all 5 sections complete fully
+        const content = await generateAIContent(prompt, 6000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${your_business}, ${content}, 'competitor-analysis', 'business-planning')`;
 
@@ -516,8 +515,8 @@ export const generateFinancialProjections = async (req, res) => {
             Be realistic and conservative. Show calculation logic. Complete all 7 sections.
         `;
 
-        // ✅ FIXED: 4000 tokens for full financial projections
-        const content = await generateAIContent(prompt, 4000);
+        // ✅ 8000 tokens — maximum safe limit for full 7-section financial projections
+        const content = await generateAIContent(prompt, 8000);
 
         await sql`INSERT INTO creations (user_id, prompt, content, type, category) VALUES (${userId}, ${business_model}, ${content}, 'financial-projections', 'business-planning')`;
 
